@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
@@ -34,23 +34,29 @@
     <p id="status"></p>
 
     <script type="module">
+        // Firebase SDKs importieren
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-analytics.js";
 
+        // Firebase Konfiguration
         const firebaseConfig = {
             apiKey: "AIzaSyAx2XJo9cZ7e6k0mJ7FhzR3aYti3El8ec0",
             authDomain: "geta-97d06.firebaseapp.com",
             projectId: "geta-97d06",
-            storageBucket: "geta-97d06.firebasestorage.app",
+            storageBucket: "geta-97d06.appspot.com",
             messagingSenderId: "849883696463",
             appId: "1:849883696463:web:e9aedec76b7429ff23493a"
         };
 
+        // Firebase initialisieren
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const analytics = getAnalytics(app);
 
         let gameReady = false;
 
+        // Spiel starten
         document.getElementById('infoLink').addEventListener('click', function(event) {
             event.preventDefault();
             gameReady = true;
@@ -59,6 +65,7 @@
             document.getElementById('gameFrame').src = "https://zap.struckd.com/games/geta-47";
         });
 
+        // **IP-Adresse speichern**
         async function saveIpAddress() {
             if (!gameReady) {
                 alert('Bitte zuerst auf "PLAY GETA" klicken.');
@@ -68,33 +75,32 @@
             try {
                 const response = await fetch('https://api.ipify.org?format=json');
                 const data = await response.json();
-                console.log("Benutzer-IP:", data.ip);
+                const userIp = data.ip;
+                console.log("Benutzer-IP:", userIp);
 
-                // Prüfen, ob die IP bereits gespeichert wurde
-                const querySnapshot = await getDocs(collection(db, "ip-adressen"));
-                let ipExists = false;
+                // Prüfen, ob die IP bereits existiert
+                const q = query(collection(db, "ip-adressen"), where("ip", "==", userIp));
+                const querySnapshot = await getDocs(q);
 
-                querySnapshot.forEach((doc) => {
-                    if (doc.data().ip === data.ip) {
-                        ipExists = true;
-                    }
+                if (!querySnapshot.empty) {
+                    document.getElementById('status').textContent = "Diese IP-Adresse wurde bereits gespeichert.";
+                    return;
+                }
+
+                // IP speichern
+                await addDoc(collection(db, "ip-adressen"), {
+                    ip: userIp,
+                    timestamp: new Date().toISOString()
                 });
 
-                if (!ipExists) {
-                    await addDoc(collection(db, "ip-adressen"), {
-                        ip: data.ip,
-                        timestamp: new Date()
-                    });
-                    document.getElementById('status').textContent = "IP-Adresse gespeichert!";
-                } else {
-                    document.getElementById('status').textContent = "Diese IP-Adresse wurde bereits gespeichert.";
-                }
+                document.getElementById('status').textContent = "IP-Adresse gespeichert!";
             } catch (error) {
-                console.error('Fehler beim Abrufen oder Speichern der IP:', error);
+                console.error('Fehler beim Speichern der IP:', error);
                 document.getElementById('status').textContent = 'Fehler beim Speichern.';
             }
         }
 
+        // **Gespeicherte IPs anzeigen**
         async function showSavedIPs() {
             try {
                 const querySnapshot = await getDocs(collection(db, "ip-adressen"));
