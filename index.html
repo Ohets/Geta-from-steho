@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
@@ -35,21 +35,18 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-analytics.js";
         import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
 
         const firebaseConfig = {
-            apiKey: "AIzaSyBpK28ww2ZXg5MtB1mjy8RnxozihisbKFU",
-            authDomain: "geta-1.firebaseapp.com",
-            projectId: "geta-1",
-            storageBucket: "geta-1.firebasestorage.app",
-            messagingSenderId: "522195602806",
-            appId: "1:522195602806:web:cda4bb3d172546f1fa3e57",
-            measurementId: "G-3V641G293Z"
+            apiKey: "AIzaSyAx2XJo9cZ7e6k0mJ7FhzR3aYti3El8ec0",
+            authDomain: "geta-97d06.firebaseapp.com",
+            projectId: "geta-97d06",
+            storageBucket: "geta-97d06.firebasestorage.app",
+            messagingSenderId: "849883696463",
+            appId: "1:849883696463:web:e9aedec76b7429ff23493a"
         };
 
         const app = initializeApp(firebaseConfig);
-        const analytics = getAnalytics(app);
         const db = getFirestore(app);
 
         let gameReady = false;
@@ -68,39 +65,34 @@
                 return;
             }
 
-            fetch('https://api.ipify.org?format=json')
-                .then(response => response.json())
-                .then(async data => {
-                    console.log("Benutzer-IP:", data.ip);
+            try {
+                const response = await fetch('https://api.ipify.org?format=json');
+                const data = await response.json();
+                console.log("Benutzer-IP:", data.ip);
 
-                    const querySnapshot = await getDocs(collection(db, "ip-adressen"));
-                    let ipExists = false;
+                // Prüfen, ob die IP bereits gespeichert wurde
+                const querySnapshot = await getDocs(collection(db, "ip-adressen"));
+                let ipExists = false;
 
-                    querySnapshot.forEach((doc) => {
-                        if (doc.data().ip === data.ip) {
-                            ipExists = true;
-                        }
-                    });
-
-                    if (!ipExists) {
-                        try {
-                            await addDoc(collection(db, "ip-adressen"), {
-                                ip: data.ip,
-                                timestamp: new Date()
-                            });
-                            document.getElementById('status').textContent = "IP-Adresse gespeichert!";
-                        } catch (e) {
-                            console.error("Fehler beim Speichern:", e);
-                            document.getElementById('status').textContent = "Speicherfehler.";
-                        }
-                    } else {
-                        document.getElementById('status').textContent = "Diese IP-Adresse wurde bereits gespeichert.";
+                querySnapshot.forEach((doc) => {
+                    if (doc.data().ip === data.ip) {
+                        ipExists = true;
                     }
-                })
-                .catch(error => {
-                    console.error('Fehler beim Abrufen der IP-Adresse:', error);
-                    document.getElementById('status').textContent = 'Fehler beim Abrufen.';
                 });
+
+                if (!ipExists) {
+                    await addDoc(collection(db, "ip-adressen"), {
+                        ip: data.ip,
+                        timestamp: new Date()
+                    });
+                    document.getElementById('status').textContent = "IP-Adresse gespeichert!";
+                } else {
+                    document.getElementById('status').textContent = "Diese IP-Adresse wurde bereits gespeichert.";
+                }
+            } catch (error) {
+                console.error('Fehler beim Abrufen oder Speichern der IP:', error);
+                document.getElementById('status').textContent = 'Fehler beim Speichern.';
+            }
         }
 
         async function showSavedIPs() {
@@ -114,8 +106,8 @@
                 document.getElementById('status').textContent = ips.length > 0 
                     ? `Gespeicherte IP-Adressen: ${ips.join(', ')}`
                     : 'Keine IP-Adressen gespeichert.';
-            } catch (e) {
-                console.error("Fehler beim Laden der IPs:", e);
+            } catch (error) {
+                console.error("Fehler beim Abrufen der IPs:", error);
                 document.getElementById('status').textContent = "Fehler beim Abrufen der IPs.";
             }
         }
